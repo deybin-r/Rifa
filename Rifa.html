@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rifa Virtual</title>
+  <style>
+    /* Estilos Generales */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f4f4;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      max-width: 900px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    h1, h2 {
+      color: #0056b3;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    /* Sección de Participantes */
+    .participants-grid {
+      display: grid;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .participant-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      background-color: #fafafa;
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    .participant-item label {
+      font-weight: bold;
+    }
+
+    .participant-item input[type="text"] {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Botones */
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #clearParticipantsBtn {
+      background-color: #ffc107;
+      margin-top: 20px;
+    }
+
+    #clearParticipantsBtn:hover {
+      background-color: #e0a800;
+    }
+
+    #clearHistoryBtn {
+      background-color: #dc3545;
+      margin-top: 20px;
+    }
+
+    #clearHistoryBtn:hover {
+      background-color: #c82333;
+    }
+
+    /* Animación de Sorteo */
+    .winner-display {
+      text-align: center;
+      font-size: 2em;
+      font-weight: bold;
+      margin-top: 30px;
+      padding: 20px;
+      background-color: #e9f7ff;
+      border: 2px dashed #007bff;
+      border-radius: 8px;
+      min-height: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s ease;
+    }
+
+    .winner-highlight {
+      color: green;
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.05); }
+    }
+
+    /* Historial de Ganadores */
+    .raffle-history ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .raffle-history li {
+      background-color: #f9f9f9;
+      border: 1px solid #eee;
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.95em;
+    }
+
+    .raffle-history li span {
+      font-weight: bold;
+    }
+
+    /* Responsive: Escritorio (más de 768px de ancho) */
+    @media (min-width: 768px) {
+      .participants-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 30px;
+      }
+
+      .raffle-section {
+        grid-column: 1 / span 1;
+      }
+
+      .history-section {
+        grid-column: 2 / span 1;
+        grid-row: 1 / span 2;
+      }
+
+      button {
+        width: auto;
+        padding: 12px 25px;
+      }
+
+      .participants-section button,
+      .raffle-section button,
+      .history-section button {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Sistema de Rifa Virtual</h1>
+
+    <section class="participants-section">
+      <h2>Registro de Participantes</h2>
+      <div class="participants-grid" id="participants-grid">
+        <!-- Los campos se generan dinámicamente -->
+      </div>
+      <button id="addParticipantBtn">➕ Agregar Participante</button>
+      <button id="clearParticipantsBtn">🧹 Limpiar Participantes</button>
+    </section>
+
+    <section class="raffle-section">
+      <button id="startRaffleBtn">🎲 Iniciar Sorteo</button>
+      <div id="winnerDisplay" class="winner-display"></div>
+    </section>
+
+    <section class="history-section">
+      <h2>Historial de Sorteos</h2>
+      <div id="raffleHistory" class="raffle-history"></div>
+      <button id="clearHistoryBtn">🗑️ Borrar historial</button>
+    </section>
+  </div>
+
+  <script>
+    const participantsGrid = document.getElementById('participants-grid');
+    const startRaffleBtn = document.getElementById('startRaffleBtn');
+    const winnerDisplay = document.getElementById('winnerDisplay');
+    const raffleHistory = document.getElementById('raffleHistory');
+    const clearParticipantsBtn = document.getElementById('clearParticipantsBtn');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const addParticipantBtn = document.getElementById('addParticipantBtn');
+
+    let participantsCount = 1;
+    let history = JSON.parse(localStorage.getItem('raffleHistory')) || [];
+
+    // Generar campo inicial
+    function generateParticipantFields() {
+      participantsGrid.innerHTML = '';
+      for (let i = 1; i <= participantsCount; i++) {
+        addParticipantField(i);
+      }
+    }
+
+    function addParticipantField(index) {
+      const div = document.createElement('div');
+      div.className = 'participant-item';
+      div.innerHTML = `
+        <label for="participant-${index}">Participante ${index}:</label>
+        <input type="text" id="participant-${index}" placeholder="Nombre">
+        <input type="text" id="contact-${index}" placeholder="Contacto (opcional)">
+      `;
+      participantsGrid.appendChild(div);
+    }
+
+    function getValidParticipants() {
+      const inputs = document.querySelectorAll('input[id^="participant-"]');
+      return Array.from(inputs)
+        .map(input => input.value.trim())
+        .filter(name => name !== '');
+    }
+
+    function showWinner(winner) {
+      winnerDisplay.textContent = `¡Felicidades, ${winner}! 🎉`;
+      winnerDisplay.classList.add('winner-highlight');
+    }
+
+    function animateRaffle(participants) {
+      winnerDisplay.classList.remove('winner-highlight');
+      winnerDisplay.textContent = '🎲 Sorteando...';
+
+      let count = 0;
+      const interval = setInterval(() => {
+        const randomIndex = Math.floor(Math.random() * participants.length);
+        winnerDisplay.textContent = `🎲 ${participants[randomIndex]}`;
+        count++;
+        if (count > 30) {
+          clearInterval(interval);
+          const winnerIndex = Math.floor(Math.random() * participants.length);
+          const winner = participants[winnerIndex];
+          showWinner(winner);
+          saveRaffleToHistory(winner);
+          displayHistory();
+        }
+      }, 100);
+    }
+
+    function saveRaffleToHistory(winner) {
+      const now = new Date();
+      const date = now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const time = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+      history.unshift({ date, time, winner });
+      localStorage.setItem('raffleHistory', JSON.stringify(history));
+    }
+
+    function displayHistory() {
+      raffleHistory.innerHTML = '';
+      if (history.length === 0) {
+        raffleHistory.innerHTML = '<p>No hay sorteos previos.</p>';
+        return;
+      }
+
+      const ul = document.createElement('ul');
+      history.forEach(item => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${item.date} ${item.time}</span><span>Ganador: ${item.winner}</span>`;
+        ul.appendChild(li);
+      });
+      raffleHistory.appendChild(ul);
+    }
+
+    // Eventos
+    addParticipantBtn.addEventListener('click', () => {
+      participantsCount++;
+      addParticipantField(participantsCount);
+    });
+
+    clearParticipantsBtn.addEventListener('click', () => {
+      if (confirm('¿Limpiar todos los participantes?')) {
+        participantsCount = 1;
+        generateParticipantFields();
+        winnerDisplay.textContent = '';
+        winnerDisplay.classList.remove('winner-highlight');
+      }
+    });
+
+    clearHistoryBtn.addEventListener('click', () => {
+      if (confirm('¿Borrar todo el historial? Esta acción es irreversible.')) {
+        history = [];
+        localStorage.removeItem('raffleHistory');
+        displayHistory();
+      }
+    });
+
+    startRaffleBtn.addEventListener('click', () => {
+      const participants = getValidParticipants();
+      if (participants.length === 0) {
+        alert('¡Al menos un participante debe tener un nombre!');
+        return;
+      }
+      animateRaffle(participants);
+    });
+
+    // Inicializar
+    generateParticipantFields();
+    displayHistory();
+  </script>
+</body>
+</html>
